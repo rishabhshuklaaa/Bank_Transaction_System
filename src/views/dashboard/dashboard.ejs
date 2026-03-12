@@ -1,0 +1,189 @@
+<div class="flex min-h-screen bg-[#f1f5f9]">
+    <%- include('../partials/sidebar') %>
+
+    <div class="flex-1 overflow-y-auto">
+        <%- include('../partials/navbar') %>
+
+        <main class="p-8 max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl font-black text-slate-800 tracking-tight">Main Dashboard</h2>
+                <p class="text-slate-500 font-medium">Welcome back, <%= user.name %>! Manage your transfers and activity here.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <% accounts.forEach(account => { %>
+                            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
+                                <div class="relative z-10">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zM12 8V7m0 1v1m0 5v1m0-1V12"></path></svg>
+                                        </div>
+                                        <span class="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full"><%= account.accountType %></span>
+                                    </div>
+                                    <p class="text-slate-400 text-sm font-bold uppercase tracking-wider">Available Balance</p>
+                                    <h3 class="text-4xl font-black text-slate-900 mt-2">₹<%= (account.balance || 0).toLocaleString() %></h3>
+                                    <p class="mt-4 text-xs font-mono text-slate-400">ID: <%= account._id %></p>
+                                </div>
+                                <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-50 group-hover:scale-150 transition-all duration-700"></div>
+                            </div>
+                        <% }) %>
+                    </div>
+
+                    <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+                            <h3 class="font-bold text-xl text-slate-800">Recent Transactions</h3>
+                            <a href="/history" class="text-indigo-600 font-bold text-sm hover:underline">View History</a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <tbody class="divide-y divide-slate-50">
+                                    <% recentTransactions.forEach(tx => { %>
+                                        <tr class="hover:bg-slate-50 transition group">
+                                            <td class="px-8 py-5">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="p-2.5 rounded-xl <%= tx.type === 'DEBIT' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600' %>">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= tx.type === 'DEBIT' ? 'M5 10l7-7m0 0l7 7m-7-7v18' : 'M19 14l-7 7m0 0l-7-7m7 7V3' %>"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-bold text-slate-800 text-sm"><%= tx.description || tx.type %></p>
+                                                        <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tight"><%= new Date(tx.createdAt).toLocaleString() %></p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td <span class="text-sm font-bold <%= tx.type === 'DEBIT' ? 'text-rose-600' : 'text-emerald-600' %>">
+                                                    <%= tx.type === 'DEBIT' ? '-' : '+' %>₹<%= tx.amount.toLocaleString('en-IN') %>
+                                                                </span>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                    <% if (recentTransactions.length === 0) { %>
+                                        <tr><td colspan="2" class="px-8 py-10 text-center text-slate-400 italic">No transactions yet.</td></tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 sticky top-8">
+                        <h3 class="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Money Transfer
+                        </h3>
+
+                        <div class="flex bg-slate-100 p-1 rounded-2xl mb-8">
+                            <button type="button" onclick="switchMode('SELF')" id="mode-self" class="flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all bg-white shadow-sm text-indigo-600">Cash Deposit</button>
+                            <button type="button" onclick="switchMode('OTHER')" id="mode-other" class="flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all text-slate-500 hover:text-slate-800">To Others</button>
+                        </div>
+
+                        <form id="dashboardTransferForm" class="space-y-5">
+                            <input type="hidden" name="transferType" id="transferType" value="SELF">
+                            
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Select Your Account</label>
+                                <select name="fromAccountId" class="w-full mt-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition" required>
+                                    <% accounts.forEach(acc => { %>
+                                        <option value="<%= acc._id %>">****<%= acc._id.toString().slice(-4) %> (₹<%= acc.balance.toLocaleString() %>)</option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <div id="recipientSection" class="hidden">
+                                <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Recipient Account ID</label>
+                                <input type="text" name="toAccountId" placeholder="Enter recipient ID" class="w-full mt-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-400 ml-1">Amount</label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
+                                    <input type="number" name="amount" placeholder="0.00" min="1" class="w-full p-4 pl-8 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none transition" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="gradient-btn w-full py-4 rounded-2xl text-white text-sm font-black uppercase tracking-widest shadow-lg shadow-indigo-100 transform active:scale-95 transition">
+                                Confirm Transaction
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    
+    function switchMode(mode) {
+        const recipientSection = document.getElementById('recipientSection');
+        const transferType = document.getElementById('transferType');
+        const btnSelf = document.getElementById('mode-self');
+        const btnOther = document.getElementById('mode-other');
+        const toInput = recipientSection.querySelector('input');
+
+        transferType.value = mode;
+
+        if (mode === 'SELF') {
+            recipientSection.classList.add('hidden');
+            toInput.required = false;
+            btnSelf.className = "flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all bg-white shadow-sm text-indigo-600";
+            btnOther.className = "flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all text-slate-500 hover:text-slate-800";
+        } else {
+            recipientSection.classList.remove('hidden');
+            toInput.required = true;
+            btnOther.className = "flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all bg-white shadow-sm text-indigo-600";
+            btnSelf.className = "flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all text-slate-500 hover:text-slate-800";
+        }
+    }
+
+    // Form Submission with Mapping & Idempotency
+    document.getElementById('dashboardTransferForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerText = "PROCESSING...";
+
+        const formData = new FormData(e.target);
+        const rawData = Object.fromEntries(formData);
+
+        
+        const finalData = {
+            fromAccount: rawData.fromAccountId,
+            toAccount: rawData.toAccountId || "", 
+            amount: rawData.amount,
+            transferType: rawData.transferType,
+            // Generate unique key to prevent double-spending
+            idempotencyKey: 'key-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+        };
+
+        try {
+            const res = await fetch('/api/transactions', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalData)
+            });
+
+            const result = await res.json();
+            
+            if (res.ok) {
+                alert("Success: " + result.message);
+                window.location.reload();
+            } else {
+                alert("Error: " + result.message);
+            }
+        } catch (error) {
+            console.error("Fetch Error:", error);
+            alert('Server error. Please try again.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+        }
+    };
+</script>

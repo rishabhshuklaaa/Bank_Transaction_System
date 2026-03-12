@@ -1,0 +1,42 @@
+<div class="flex min-h-screen">
+    <%- include('../partials/sidebar') %>
+    <div class="flex-1 p-8">
+        <div class="max-w-xl mx-auto bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+            <div class="mb-8 text-center">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="arrow-down-to-line" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900">Deposit Funds</h2>
+                <p class="text-slate-500">Add money to your digital wallet instantly.</p>
+            </div>
+
+            <form action="/api/tranctions/" method="POST" data-remote class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-slate-700">Select Account</label>
+                    <select name="toAccount" required class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-slate-50">
+                        <% accounts.forEach(acc => { %>
+                            <option value="<%= acc._id %>">A/C: ....<%= acc._id.toString().slice(-4) %> (Balance: ₹<%= acc.balance %>)</option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <input type="hidden" name="fromAccount" value="<%= accounts[0] ? accounts[0]._id : '' %>">
+                
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-slate-700">Amount (₹)</label>
+                    <input type="number" name="amount" min="1" placeholder="Enter amount" required class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-slate-700">Transaction Ref</label>
+                    <input type="text" name="idempotencyKey" value="DEP-<%= Date.now() %>" readonly class="w-full px-4 py-3 border border-slate-100 bg-slate-50 text-slate-400 rounded-xl font-mono text-sm">
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl hover:bg-emerald-700 transition shadow-lg flex justify-center items-center gap-2">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    Complete Deposit
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

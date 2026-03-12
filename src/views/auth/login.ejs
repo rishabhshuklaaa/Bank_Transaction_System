@@ -1,0 +1,22 @@
+<div class="min-h-screen flex items-center justify-center bg-blue-600 p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-700">SkyBank</h1>
+            <p class="text-slate-500">Securely access your funds</p>
+        </div>
+        <form action="/api/auth/login" method="POST" data-remote class="space-y-5">
+            <div>
+                <label class="block text-sm font-semibold mb-2">Email Address</label>
+                <input type="email" name="email" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-2">Password</label>
+                <input type="password" name="password" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg">Sign In</button>
+        </form>
+        <p class="mt-6 text-center text-sm text-slate-600">
+            Don't have an account? <a href="/auth/register" class="text-blue-600 font-bold">Register</a>
+        </p>
+    </div>
+</div>

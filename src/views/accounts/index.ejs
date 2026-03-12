@@ -1,0 +1,97 @@
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-10">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Account Management</h1>
+            <p class="text-slate-500 font-medium mt-1">View your details or open a new bank account.</p>
+        </div>
+        <button onclick="toggleModal()" class="gradient-btn text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:scale-105 transition-all">
+            + Open New Account
+        </button>
+    </div>
+
+    <% if (accounts && accounts.length > 0) { %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <% accounts.forEach(account => { %>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all group relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="bg-indigo-50 p-4 rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <i data-lucide="wallet" class="w-6 h-6"></i>
+                        </div>
+                        <span class="bg-emerald-50 text-emerald-600 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
+                            <%= account.accountType %>
+                        </span>
+                    </div>
+                    
+                    <h3 class="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">Available Balance</h3>
+                    <p class="text-4xl font-black text-slate-900 mb-8">₹<%= (account.balance || 0).toLocaleString() %></p>
+                    
+                    <div class="pt-6 border-t border-slate-50 flex justify-between items-center">
+                        <div class="text-xs font-mono text-slate-400 italic">
+                            A/C: ****<%= account._id.toString().slice(-4) %>
+                        </div>
+                        <a href="/accounts/<%= account._id %>" class="text-indigo-600 font-black text-sm hover:translate-x-1 transition-transform flex items-center gap-1">
+                            Details <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-slate-50 rounded-full blur-3xl opacity-50"></div>
+                </div>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <div class="text-center py-24 bg-white rounded-[3rem] border-4 border-dashed border-slate-100">
+            <div class="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="info" class="text-slate-300 w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-700 tracking-tight">No Active Accounts</h2>
+            <p class="text-slate-400 mt-2 font-medium">Ready to start? Click the button above to open your first account.</p>
+        </div>
+    <% } %>
+</div>
+
+<div id="accountModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 transform transition-all">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight text-center w-full">Open New Account</h2>
+            <button onclick="toggleModal()" class="text-slate-400 hover:text-slate-600 p-2 absolute right-6 top-8">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <form action="/api/accounts/create" method="POST" id="createAccountForm" class="space-y-6">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1 tracking-widest">Account Type</label>
+                <select name="accountType" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all cursor-pointer">
+                    <option value="Savings">Savings Account</option>
+                    <option value="Current">Current Account</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1 tracking-widest">Initial Deposit (Min ₹500)</label>
+                <div class="relative">
+                    <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">₹</span>
+                    <input type="number" name="balance" min="500" placeholder="500.00" required 
+                           class="w-full px-5 py-4 pl-10 rounded-2xl border border-slate-100 bg-slate-50 text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                </div>
+            </div>
+            <button type="submit" class="gradient-btn w-full text-white font-black py-5 rounded-2xl mt-4 shadow-xl shadow-indigo-100 active:scale-95 transition-all uppercase tracking-widest text-xs">
+                Confirm & Open Account
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Toggle Account Modal
+    function toggleModal() {
+        document.getElementById('accountModal').classList.toggle('hidden');
+    }
+
+    // Close on Backdrop Click
+    window.onclick = function(event) {
+        const modal = document.getElementById('accountModal');
+        if (event.target == modal) {
+            toggleModal();
+        }
+    }
+</script>

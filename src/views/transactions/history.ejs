@@ -1,0 +1,105 @@
+<div class="flex min-h-screen bg-[#f8fafc]">
+    <%- include('../partials/sidebar') %>
+
+    <div class="flex-1 overflow-y-auto">
+        <%- include('../partials/navbar') %>
+
+        <main class="p-8 max-w-7xl mx-auto">
+            <div class="flex justify-between items-center mb-10">
+                <div>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tight">Account Statement</h2>
+                    <p class="text-slate-500 font-medium">Detailed history of all your financial movements.</p>
+                </div>
+                <button onclick="window.print()" class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 font-bold shadow-sm hover:bg-slate-50 transition-all active:scale-95">
+                    <i data-lucide="printer" class="w-5 h-5"></i>
+                    Download PDF
+                </button>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50/50 text-slate-400 uppercase text-[10px] font-black tracking-[0.2em]">
+                            <tr>
+                                <th class="px-8 py-5">Reference No.</th>
+                                <th class="px-8 py-5">Account No.</th>
+                                <th class="px-8 py-5">Transaction Type</th>
+                                <th class="px-8 py-5">Status</th>
+                                <th class="px-8 py-5">Date & Time</th>
+                                <th class="px-8 py-5 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <% if (transactions && transactions.length > 0) { %>
+                                <% transactions.forEach(tx => { %>
+                                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                                        <td class="px-8 py-6">
+                                            <span class="font-mono text-sm text-slate-700 font-black">
+                                                <%= tx.decimalId %>
+                                            </span>
+                                        </td>
+                                        
+                                        <td class="px-8 py-6">
+                                            <span class="text-sm font-bold text-slate-600">
+                                                ****<%= tx.accountNo %>
+                                            </span>
+                                        </td>
+
+                                        <td class="px-8 py-6">
+                                            <div class="flex items-center gap-3">
+                                                <div class="p-2.5 rounded-xl <%= tx.type === 'DEBIT' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600' %>">
+                                                    <i data-lucide="<%= tx.type === 'DEBIT' ? 'arrow-up-right' : 'arrow-down-left' %>" class="w-4 h-4"></i>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="font-bold text-slate-700 leading-none mb-1 text-sm tracking-tight"><%= tx.type %></span>
+                                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SkyBank Transfer</span>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="px-8 py-6">
+                                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
+                                                <%= tx.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 
+                                                   tx.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700' %>">
+                                                <%= tx.status || 'SUCCESS' %>
+                                            </span>
+                                        </td>
+
+                                        <td class="px-8 py-6">
+                                            <p class="text-sm font-semibold text-slate-600">
+                                                <%= new Date(tx.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                            </p>
+                                            <p class="text-[10px] text-slate-400 font-medium uppercase">
+                                                <%= new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
+                                            </p>
+                                        </td>
+
+                                        <td class="px-8 py-6 text-right">
+                                            <span class="text-lg font-black <%= tx.type === 'DEBIT' ? 'text-rose-600' : 'text-emerald-600' %>">
+                                                <%= tx.type === 'DEBIT' ? '-' : '+' %>₹<%= tx.amount.toLocaleString('en-IN') %>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" class="px-8 py-24 text-center">
+                                        <div class="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <i data-lucide="database-zap" class="text-slate-300 w-10 h-10"></i>
+                                        </div>
+                                        <h3 class="text-slate-800 font-bold">No Records Found</h3>
+                                        <p class="text-slate-400 text-sm mt-1">Make your first transaction to see activity here.</p>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <p class="text-slate-400 text-xs font-medium">This is a system-generated statement and does not require a physical signature.</p>
+            </div>
+        </main>
+    </div>
+</div>

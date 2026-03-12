@@ -1,0 +1,2 @@
+to run the application write on terminal 
+npm run dev 

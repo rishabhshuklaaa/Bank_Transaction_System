@@ -1,0 +1,56 @@
+<div class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-600">Create Account</h1>
+            <p class="text-slate-500">Join SkyBank Digital today</p>
+        </div>
+
+        <form action="/api/auth/register" method="POST" data-remote class="space-y-5">
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-slate-700">Full Name</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </span>
+                    <input type="text" name="name" required placeholder="Enter your name" 
+                        class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-slate-700">Email Address</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                    </span>
+                    <input type="email" name="email" required placeholder="name@company.com" 
+                        class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-2 text-slate-700">Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                    </span>
+                    <input type="password" name="password" required placeholder="••••••••" 
+                        class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50">
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Must be at least 8 characters long.</p>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg flex justify-center items-center gap-2">
+                <i data-lucide="user-plus" class="w-5 h-5"></i>
+                Create Account
+            </button>
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+            <p class="text-sm text-slate-600">
+                Already have an account? 
+                <a href="/auth/login" class="text-blue-600 font-bold hover:underline">Log in here</a>
+            </p>
+        </div>
+    </div>
+</div>
