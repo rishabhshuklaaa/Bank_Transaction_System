@@ -47,14 +47,32 @@ Bank_Transaction_System/
 ├── server.js             # Entry Point
 └── package.json          # Dependencies
 
+---
+
 ## ⚙️ Setup & Installation
 
-### **1. 📥 Clone the Repository**
+### **1. 📥 Clone & Install**
 
 git clone [https://github.com/rishabhshuklaaa/Bank_Transaction_System.git](https://github.com/rishabhshuklaaa/Bank_Transaction_System.git)
-Install dependencies: npm install
-Set up .env with PORT, MONGO_URI, JWT_SECRET, EMAIL_USER, and EMAIL_PASS.
-Run: npm run dev
+cd Bank_Transaction_System
+npm install
 
-Developed by Rishabh Shukla
+2. 🖥️ Backend Setup (.env)
+Create a .env file in the root directory and add:
+
+Code snippet
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+Run Server: npm run dev
+
+3. 💻 Frontend Setup
+
+cd frontend
+npm install
+npm run dev
+
+Developed with ❤️ by Rishabh Shukla
 
