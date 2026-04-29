@@ -1,112 +1,127 @@
-const userModel = require("../models/user.model")
-const jwt = require("jsonwebtoken")
-const emailService = require("../services/email.service")
-const tokenBlackListModel = require("../models/blackList.model")
+const userModel = require("../models/user.model");
+const jwt = require("jsonwebtoken");
+const emailService = require("../services/email.service");
+const tokenBlackListModel = require("../models/blackList.model");
 
 /**
-* - user register controller
-* - POST /api/auth/register
-*/
+ * Handles user registration.
+ * POST /api/auth/register
+ */
 async function userRegisterController(req, res) {
-    const { email, password, name } = req.body
+    const { email, password, name } = req.body;
 
-    const isExists = await userModel.findOne({
-        email: email
-    })
+    // Check if a user with the given email already exists
+    const isExists = await userModel.findOne({ email: email });
 
     if (isExists) {
         return res.status(422).json({
-            message: "User already exists with email.",
+            message: "User already exists with this email.",
             status: "failed"
-        })
+        });
     }
 
+    // Create the new user record
     const user = await userModel.create({
         email, password, name
-    })
+    });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
+    // Generate a JWT valid for 3 days
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" });
 
-    res.cookie("token", token)
+    // Set the token in a cookie for browser-based session management
+    res.cookie("token", token);
 
+    // Return the user data and token as JSON for React
     res.status(201).json({
+        success: true,
         user: {
             _id: user._id,
             email: user.email,
             name: user.name
         },
         token
-    })
+    });
 
-    await emailService.sendRegistrationEmail(user.email, user.name)
+    // Send the welcome email asynchronously
+    await emailService.sendRegistrationEmail(user.email, user.name);
 }
 
 /**
- * - User Login Controller
- * - POST /api/auth/login
-  */
-
+ * Handles user login.
+ * POST /api/auth/login
+ */
 async function userLoginController(req, res) {
-    const { email, password } = req.body
+    const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email }).select("+password")
+    // Find the user and explicitly include the password for comparison
+    const user = await userModel.findOne({ email }).select("+password");
 
     if (!user) {
         return res.status(401).json({
             message: "Email or password is INVALID"
-        })
+        });
     }
 
-    const isValidPassword = await user.comparePassword(password)
+    // Use the model method to compare the hashed password
+    const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
         return res.status(401).json({
             message: "Email or password is INVALID"
-        })
+        });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
+    // Generate JWT upon successful authentication
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" });
 
-    res.cookie("token", token)
+    res.cookie("token", token);
 
+    // Return status 200 with JSON payload
     res.status(200).json({
+        success: true,
         user: {
             _id: user._id,
             email: user.email,
             name: user.name
         },
         token
-        
-    })
-
+    });
 }
 
-
 /**
- * - User Logout Controller
- * - POST /api/auth/logout
-  */
+ * Handles user logout.
+ * POST /api/auth/logout
+ * Changed: Replaced redirects with JSON responses for React compatibility.
+ */
 async function userLogoutController(req, res) {
-    const token = req.cookies.token || req.headers.authorization?.split(" ")[ 1 ];
+    // Extract token from cookies or Authorization header
+    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-        
-        return res.redirect("/"); 
+        // Instead of redirecting, return a 400 error or success if session is already gone
+        return res.status(400).json({
+            success: false,
+            message: "No active session or token found."
+        });
     }
 
+    // Blacklist the token to prevent further use
     await tokenBlackListModel.create({
         token: token
     });
 
+    // Clear the cookie on the client side
     res.clearCookie("token");
 
-    
-    res.redirect("/"); 
+    // Return JSON success so React can navigate the user to the landing page
+    res.status(200).json({
+        success: true,
+        message: "Logged out successfully."
+    });
 }
-
 
 module.exports = {
     userRegisterController,
     userLoginController,
     userLogoutController
-}
+};

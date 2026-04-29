@@ -5,7 +5,8 @@ const ledgerModel = require("../models/ledger.model");
 const transactionModel = require("../models/transaction.model");
 
 /**
- * Creates a new bank account and redirects back to the accounts page
+ * Creates a new bank account.
+ * Updated: Replaced redirects with JSON responses for React frontend compatibility.
  */
 async function createAccountController(req, res) {
     const session = await mongoose.startSession();
@@ -14,20 +15,22 @@ async function createAccountController(req, res) {
         const { accountType, balance } = req.body;
         const initialDeposit = Number(balance);
 
+        // Validation: Minimum deposit check
         if (!accountType || initialDeposit < 500) {
             throw new Error("Minimum initial deposit of ₹500 is required.");
         }
 
-        // 1. Create the account
+        // 1. Create the account object within the session
         const [newAccount] = await accountModel.create([{
             user: req.user._id,
             accountType,
-            balance: 0 // Ledger will maintain the actual balance
+            balance: 0 // Balance is dynamically derived from the Ledger
         }], { session });
 
+        // Generate a unique key to prevent duplicate initial deposits
         const idempotencyKey = uuidv4();
 
-        // 2. Create Initial Deposit Transaction record
+        // 2. Create the Initial Deposit Transaction record
         const [transaction] = await transactionModel.create([{
             user: req.user._id,
             amount: initialDeposit,
@@ -38,7 +41,7 @@ async function createAccountController(req, res) {
             description: "Initial Account Opening Deposit"
         }], { session });
 
-        // 3. Credit Ledger Entry to reflect balance
+        // 3. Create a Ledger Entry (CREDIT) to reflect the starting balance
         await ledgerModel.create([{
             account: newAccount._id,
             transaction: transaction._id,
@@ -47,29 +50,40 @@ async function createAccountController(req, res) {
             description: "Initial Deposit"
         }], { session });
 
+        // Commit all changes atomically
         await session.commitTransaction();
         
-        
-        return res.redirect("/accounts");
+        // Return success response to React
+        return res.status(201).json({
+            success: true,
+            message: "Account created successfully",
+            account: newAccount
+        });
 
     } catch (error) {
+        // Rollback any changes if an error occurs during the session
         await session.abortTransaction();
         console.error("Account Creation Error:", error.message);
         
-        return res.redirect("/accounts?error=" + encodeURIComponent(error.message));
+        // Return structured error message for frontend display
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
     } finally {
+        // Ensure the session is always closed
         session.endSession();
     }
 }
 
 /**
- * Fetches all accounts owned by the user 
+ * Fetches all accounts owned by the authenticated user.
  */
 async function getUserAccountsController(req, res) {
     try {
         const accountsData = await accountModel.find({ user: req.user._id });
 
-        // Calculate real-time balance for each account before rendering
+        // Use the aggregate getBalance method for each account to get real-time data
         const accounts = await Promise.all(accountsData.map(async (acc) => {
             const currentBalance = await acc.getBalance();
             return {
@@ -78,31 +92,50 @@ async function getUserAccountsController(req, res) {
             };
         }));
 
-        res.status(200).json({ accounts });
+        res.status(200).json({
+            success: true,
+            accounts
+        });
     } catch (error) {
-        res.status(500).json({ message: "Internal Server Error" });
+        res.status(500).json({ 
+            success: false, 
+            message: "Internal Server Error while fetching accounts" 
+        });
     }
 }
 
 /**
- * Fetches real-time balance using ledger aggregation
+ * Fetches the real-time balance of a specific account using ledger aggregation.
  */
 async function getAccountBalanceController(req, res) {
     try {
         const { accountId } = req.params;
         const account = await accountModel.findOne({ _id: accountId, user: req.user._id });
         
-        if (!account) return res.status(404).json({ message: "Account not found" });
+        if (!account) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Account not found" 
+            });
+        }
 
         const balance = await account.getBalance();
-        res.status(200).json({ accountId, balance });
+        res.status(200).json({ 
+            success: true,
+            accountId, 
+            balance 
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching balance" });
+        res.status(500).json({ 
+            success: false, 
+            message: "Error fetching balance" 
+        });
     }
 }
 
 /**
- * Money transfer logic (Keeping it for Dashboard use)
+ * Handles money transfers between accounts.
+ * This maintains atomicity and handles race conditions via Mongoose sessions.
  */
 async function transferMoneyController(req, res) {
     const session = await mongoose.startSession();
@@ -112,19 +145,23 @@ async function transferMoneyController(req, res) {
         const { fromAccountId, toAccountId, amount } = req.body;
         const transferAmount = Number(amount);
 
+        // Basic validation
         if (!fromAccountId || !toAccountId || transferAmount <= 0) {
             throw new Error("Invalid transfer details.");
         }
 
+        // Verify sender ownership and funds
         const senderAccount = await accountModel.findOne({ _id: fromAccountId, user: req.user._id });
         if (!senderAccount) throw new Error("Unauthorized source account.");
 
         const currentBalance = await senderAccount.getBalance();
         if (currentBalance < transferAmount) throw new Error("Insufficient funds.");
 
+        // Verify recipient exists
         const recipientAccount = await accountModel.findById(toAccountId);
         if (!recipientAccount) throw new Error("Recipient does not exist.");
 
+        // Create the transaction record with an idempotency key
         const [transaction] = await transactionModel.create([{
             user: req.user._id,
             amount: transferAmount,
@@ -136,6 +173,7 @@ async function transferMoneyController(req, res) {
             description: `Transfer to ${toAccountId}`
         }], { session });
 
+        // Double-entry bookkeeping: DEBIT the sender
         await ledgerModel.create([{
             account: fromAccountId,
             transaction: transaction._id,
@@ -144,6 +182,7 @@ async function transferMoneyController(req, res) {
             description: `Sent to ${toAccountId}`
         }], { session });
 
+        // Double-entry bookkeeping: CREDIT the receiver
         await ledgerModel.create([{
             account: toAccountId,
             transaction: transaction._id,
@@ -153,11 +192,17 @@ async function transferMoneyController(req, res) {
         }], { session });
 
         await session.commitTransaction();
-        res.status(200).json({ status: "success", message: "Transfer successful" });
+        res.status(200).json({ 
+            success: true, 
+            message: "Transfer successful" 
+        });
 
     } catch (error) {
         await session.abortTransaction();
-        res.status(400).json({ status: "error", message: error.message });
+        res.status(400).json({ 
+            success: false, 
+            message: error.message 
+        });
     } finally {
         session.endSession();
     }
