@@ -3,6 +3,7 @@ const ledgerModel = require("../models/ledger.model");
 const accountModel = require("../models/account.model");
 const emailService = require("../services/email.service");
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid"); // Ensure uuid is imported
 
 /**
  * 10-STEP TRANSACTION FLOW (Supports SELF Deposit & OTHERS Transfer)
@@ -33,12 +34,17 @@ async function createTransaction(req, res) {
     }
 
     try {
-        // Fetch account details and populate owner information for emails
-        const fromUserAccount = await accountModel.findOne({ _id: fromAccount }).populate('user');
-        const toUserAccount = await accountModel.findOne({ _id: toAccount }).populate('user');
+        // --- CRITICAL SECURITY FIX ---
+        // Ensure the 'fromAccount' actually belongs to the authenticated user (req.user._id)
+        const fromUserAccount = await accountModel.findOne({ _id: fromAccount, user: req.user._id }).populate('user');
+        
+        // If SELF, reuse fromUserAccount to save a DB call, else fetch the recipient
+        const toUserAccount = (transferType === 'SELF') 
+            ? fromUserAccount 
+            : await accountModel.findOne({ _id: toAccount }).populate('user');
 
         if (!fromUserAccount || !toUserAccount) {
-            return res.status(400).json({ success: false, message: "Invalid account details provided" });
+            return res.status(400).json({ success: false, message: "Invalid account details or unauthorized access" });
         }
 
         // Check if this specific transaction has already been processed (Idempotency)
@@ -74,7 +80,7 @@ async function createTransaction(req, res) {
         try {
             // 1. Create the Transaction Log
             const [transaction] = await transactionModel.create([{
-                fromAccount: transferType === 'SELF' ? null : fromAccount, // Logic: Self deposit doesn't have a "source account" in the ledger
+                fromAccount: transferType === 'SELF' ? null : fromAccount, 
                 toAccount,
                 amount: transferAmount,
                 idempotencyKey,
@@ -116,9 +122,9 @@ async function createTransaction(req, res) {
             await session.commitTransaction();
             session.endSession();
 
-            // Asynchronous Email Notifications
+            // --- EMAIL FIX: Wrapped in separate try-catch ---
+            // This ensures that if the Email Service fails, the user still gets a 201 Success.
             try {
-                // In SELF mode, the user gets a CREDIT notification
                 const senderMailType = transferType === 'SELF' ? "CREDIT" : "DEBIT";
                 await emailService.sendTransactionEmail(
                     req.user.email, 
@@ -138,7 +144,7 @@ async function createTransaction(req, res) {
                     );
                 }
             } catch (mailErr) {
-                console.error("Email delivery failed, but transaction is permanent:", mailErr);
+                console.error("Email delivery failed, but transaction is permanent:", mailErr.message);
             }
 
             return res.status(201).json({
@@ -148,7 +154,6 @@ async function createTransaction(req, res) {
             });
 
         } catch (innerError) {
-            // Abort transaction in case of any failure during the steps
             await session.abortTransaction();
             session.endSession();
             throw innerError;
@@ -161,7 +166,6 @@ async function createTransaction(req, res) {
 
 /**
  * System-initiated Initial Funds Transfer
- * Used to credit funds from a system account to a new user account.
  */
 async function createInitialFundsTransaction(req, res) {
     const { toAccount, amount } = req.body;
@@ -210,14 +214,19 @@ async function createInitialFundsTransaction(req, res) {
             await session.commitTransaction();
             session.endSession();
 
-            if (toUserAccount.user && toUserAccount.user.email) {
-                await emailService.sendTransactionEmail(
-                    toUserAccount.user.email, 
-                    toUserAccount.user.name, 
-                    Number(amount), 
-                    fromUserAccount._id, 
-                    "CREDIT"
-                );
+            // Wrapped Email logic for Initial Funds
+            try {
+                if (toUserAccount.user && toUserAccount.user.email) {
+                    await emailService.sendTransactionEmail(
+                        toUserAccount.user.email, 
+                        toUserAccount.user.name, 
+                        Number(amount), 
+                        fromUserAccount._id, 
+                        "CREDIT"
+                    );
+                }
+            } catch (mailErr) {
+                console.error("Initial Funds Email failed:", mailErr.message);
             }
 
             return res.status(201).json({ success: true, message: "Initial funds credited", transaction });

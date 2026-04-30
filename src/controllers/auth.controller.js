@@ -29,7 +29,12 @@ async function userRegisterController(req, res) {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" });
 
     // Set the token in a cookie for browser-based session management
-    res.cookie("token", token);
+    res.cookie("token", token ,{
+        httpOnly: true, // Prevents JavaScript access to the cookie
+        secure: "true", // Only send cookie over HTTPS in production
+        sameSite: "none", // Protects against CSRF
+        maxAge: 3 * 24 * 60 * 60 * 1000 // Cookie expires in 3 days
+    });
 
     // Return the user data and token as JSON for React
     res.status(201).json({
@@ -74,7 +79,12 @@ async function userLoginController(req, res) {
     // Generate JWT upon successful authentication
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" });
 
-    res.cookie("token", token);
+    res.cookie("token", token , {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 3 * 24 * 60 * 60 * 1000
+    });
 
     // Return status 200 with JSON payload
     res.status(200).json({
